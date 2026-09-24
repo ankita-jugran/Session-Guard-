@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SessionGuard Target{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Toast Popup Notification -->
+    <div id="toast-notification" class="toast-popup" style="display: none;">
+        <span id="toast-icon">🛡️</span>
+        <span id="toast-message">Security mode updated</span>
+    </div>
+
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand">
+                <h1>SessionGuard <span>Target</span></h1>
+            </div>
+            
+            <div class="mode-control">
+                <div class="mode-dropdown-wrapper">
+                    <button class="mode-dropdown-btn" id="mode-dropdown-btn" onclick="toggleModeDropdown(event)">
+                        <span class="dot" id="header-mode-dot" style="background-color: {{ 'var(--danger)' if not profile or profile.name == 'vulnerable' else 'var(--success)' }};"></span>
+                        <span>Mode: <strong id="header-mode-text">{{ profile.name | upper if profile else 'VULNERABLE' }}</strong></span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left: 3px;"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                    <div class="mode-dropdown-menu" id="mode-dropdown-menu" style="display: none;">
+                        <div class="mode-dropdown-item {{ 'active' if not profile or profile.name == 'vulnerable' else '' }}" id="mode-opt-vulnerable" onclick="selectSecurityMode('vulnerable')">
+                            <span class="dot" style="background-color: var(--danger);"></span>
+                            <div>
+                                <div style="font-weight: 600; color: var(--text-white); font-size: 0.85rem;">Vulnerable Mode</div>
+                                <div style="color: var(--text-muted); font-size: 0.72rem;">Weak key, alg:none allowed, long expiry</div>
+                            </div>
+                        </div>
+                        <div class="mode-dropdown-item {{ 'active' if profile and profile.name == 'hardened' else '' }}" id="mode-opt-hardened" onclick="selectSecurityMode('hardened')">
+                            <span class="dot" style="background-color: var(--success);"></span>
+                            <div>
+                                <div style="font-weight: 600; color: var(--text-white); font-size: 0.85rem;">Hardened Mode</div>
+                                <div style="color: var(--text-muted); font-size: 0.72rem;">256-bit key, strict signature, blacklist</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="app-footer">
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SessionGuard | Audit Report</title>
+  <link rel="stylesheet" href="/static/css/analyzer.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { background-color: var(--bg-primary); }
+    .report-container { max-width: 1000px; margin: 2rem auto; padding: 2rem; background: var(--bg-primary); }
+    .section-title { font-size: 1.5rem; font-weight: 800; color: var(--text-main); border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.5rem; margin-top: 3rem; margin-bottom: 1.5rem; }
+    
+    .header-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 2rem; }
+    
+    /* Print optimizations for PDF */
+    @media print {
+      body, .report-container { background: white !important; color: black !important; margin: 0; padding: 0; }
+      .card, .executive-card, .check-card, .stat-item { background: white !important; border: 1px solid #ccc !important; box-shadow: none !important; color: black !important; }
+      .brand-title, .section-title, .check-name, h3, h4, span, p, td { color: black !important; }
+      .btn-primary, .no-print { display: none !important; }
+      .token-mono, .code-block { background: #f4f4f4 !important; border: 1px solid #ddd !important; color: #333 !important; white-space: pre-wrap !important; word-break: break-all !important; }
+      .check-failed { border-left: 4px solid #d32f2f !important; }
+      .check-passed { border-left: 4px solid #388e3c !important; }
+      .score-critical .score-number, .badge-fail { color: #d32f2f !important; }
+      .score-low .score-number, .badge-pass { color: #388e3c !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="report-container">
+    <div class="header-row">
+      <div class="brand-text">
+        <span class="brand-title">SessionGuard Security Report</span>
+        <span class="brand-badge">Formal Audit Results</span>
+      </div>
+      <!-- Hidden by default until report finishes generating -->
+      <button id="pdf-btn" class="btn-primary no-print" onclick="window.print()" style="display: none;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+        Save PDF / Print
+      </button>
+    </div>
+
+    <!-- The Animation / Loading Container -->
+    <div id="animation-container" class="loading-card" style="margin-top: 3rem;">
+      <div class="scanner-radar"></div>
+      <h4 style="margin-bottom: 1rem;">Executing Multi-Vector Security Checks...</h4>
+      <div id="scan-steps" style="text-align: left; margin: 1.5rem auto; max-width: 450px; font-family: var(--font-mono); font-size: 0.85rem; color: var(--accent-cyan); line-height: 1.6;"></div>
+    </div>
+
+    <!-- The Actual Report (Hidden until animation finishes) -->
+    <div id="report-content" style="display: none;"></div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const dataStr = sessionStorage.getItem("sessionguard_report");
+      const animContainer = document.getElementById("animation-container");
+      const reportContainer = document.getElementById("report-content");
+      const pdfBtn = document.getElementById("pdf-btn");
+      
+      if (!dataStr) {
+        animContainer.style.display = "none";
+        reportContainer.style.display = "block";
+        reportContainer.innerHTML = `
+          <div class="empty-state-card">
+            <h3>No Report Data Found</h3>
+            <p>Please return to the main console and run a security audit first.</p>
+            <br>
+            <a href="/" class="btn-primary" style="display: inline-block; text-decoration: none;">Go to Console</a>
+          </div>`;
+        return;
+      }
+      
+      // 1. Run the suspenseful animation
+      const steps = [
+        "[*] Parsing JWT Header and Claims...",
+        "[*] Evaluating cryptographic signature enforcement...",
+        "[*] Probing target server with alg:none forgery...",
+        "[*] Executing offline HMAC-SHA256 dictionary attack...",
+        "[*] Calculating exploitability and impact risk vectors...",
+        "[+] Audit Complete. Generating Report..."
+      ];
+      
+      const scanStepsEl = document.getElementById("scan-steps");
+      for (let i = 0; i < steps.length; i++) {
+        const stepEl = document.createElement("div");
+        stepEl.style.opacity = "0";
+        stepEl.textContent = steps[i];
+        scanStepsEl.appendChild(stepEl);
+        
+        setTimeout(() => { stepEl.style.transition = "opacity 0.3s"; stepEl.style.opacity = "1"; }, 50);
+        await new Promise(r => setTimeout(r, 600));
+      }
+      
+      // 2. Hide animation, reveal report and PDF button
+      animContainer.style.display = "none";
+      reportContainer.style.display = "block";
+      pdfBtn.style.display = "flex";
+      
+      // 3. Render Report HTML
+      const report = JSON.parse(dataStr);
+      const meta = report.token_metadata || {};
+      const score = report.overall_score || 1;
+      
+      let scoreClass = score >= 9 ? 'score-critical' : score >= 6 ? 'score-high' : score >= 4 ? 'score-medium' : 'score-low';
+      let scoreBadge = score >= 9 ? 'CRITICAL RISK' : score >= 6 ? 'HIGH RISK' : score >= 4 ? 'MEDIUM RISK' : 'LOW RISK (HARDENED)';
+      let verdictTitle = score >= 9 ? "Complete Account Takeover Possible" : score >= 6 ? "Persistent Session Hijacking Window" : "Hardened & Defended Session Posture";
+
+      // Helper function to turn long paragraphs into bullet points
+      function toBulletPoints(text) {
+        if (!text) return "";
+        let sentences = text.split(/(?<=\.)\s+/).filter(s => s.trim().length > 0);
+        if (sentences.length <= 1) return text;
+        return "<ul style='margin-left: 1.5rem; padding-left: 0.5rem; list-style-type: disc; line-height: 1.5;'>" + 
+               sentences.map(s => "<li style='margin-bottom: 0.4rem;'>" + s + "</li>").join("") + 
+               "</ul>";
+      }
+      
+      let html = `
+        <!-- Executive Summary -->
+        <div class="card executive-card" style="margin-bottom: 2rem;">
+          <div class="executive-top">
+            <div class="risk-score-box ` + scoreClass + `">
+              <div class="score-number-wrap">
+                <span class="score-number">` + score + `</span><span class="score-denominator">/ 9</span>
+              </div>
+              <span class="score-level-badge">` + scoreBadge + `</span>
+            </div>
+            <div class="verdict-content">
+              <div class="verdict-label">SESSION HIJACKING RISK VERDICT</div>
+              <h3 class="verdict-title">` + verdictTitle + `</h3>
+              <div class="verdict-description" style="margin-top: 0.5rem;">` + toBulletPoints(report.hijack_verdict || "No issues found.") + `</div>
+            </div>
+            <div class="stats-grid">
+              <div class="stat-item"><span class="stat-label">Checks Run</span><span class="stat-value">` + report.total_checks + `</span></div>
+              <div class="stat-item"><span class="stat-label">Failed</span><span class="stat-value stat-fail">` + report.failed_count + `</span></div>
+              <div class="stat-item"><span class="stat-label">Passed</span><span class="stat-value stat-pass">` + report.passed_count + `</span></div>
+            </div>
+          </div>
+        </div>
+        
+        <h2 class="section-title">1. Security Checks & Vulnerabilities</h2>
+        <div class="checks-grid" style="margin-bottom: 3rem;">
+      `;
+
+      (report.checks || []).forEach(check => {
+        const passClass = check.passed ? "check-passed" : "check-failed";
+        const badge = check.passed ? '<span class="badge-status badge-pass">PASS</span>' : '<span class="badge-status badge-fail">FAIL: ' + check.severity + '</span>';
+        const sBadge = check.passed ? '<span class="check-score-pill">Score: 1/9</span>' : '<span class="check-score-pill">Score: ' + check.score + '/9</span>';
+        const remediationHtml = check.remediation ? '<div class="check-remediation"><span class="remediation-label">💡 Recommended Remediation:</span> <div style="margin-top:0.4rem;">' + toBulletPoints(check.remediation) + '</div></div>' : '';
+        
+        html += `
+          <div class="check-card ` + passClass + `">
+            <div class="check-header">
+              <div class="check-title-wrap">` + badge + `<h4 class="check-name">` + check.title + `</h4></div>
+              ` + sBadge + `
+            </div>
+            <div class="check-body" style="margin-top: 0.5rem; margin-bottom: 1rem;">` + toBulletPoints(check.description) + `</div>
+            <div class="check-standards" style="padding-top: 0.5rem; border-top: 1px solid var(--border-subtle);"><span>Standards: ` + check.cwe + ` | ` + check.owasp + `</span></div>
+            ` + remediationHtml + `
+          </div>
+        `;
+      });
+
+      html += `
+        </div>
+        
+        <h2 class="section-title">2. Decoded Token Attributes</h2>
+        <div class="card" style="margin-bottom: 3rem;">
+          <table class="meta-table" style="width: 100%; text-align: left;">
+            <tbody>
+              <tr><td style="padding: 0.75rem; border-bottom: 1px solid var(--border-subtle);">Algorithm (<code>alg</code>)</td><td style="padding: 0.75rem; border-bottom: 1px solid var(--border-subtle);">` + (meta.algorithm || "N/A") + `</td></tr>
+              <tr><td style="padding: 0.75rem; border-bottom: 1px solid var(--border-subtle);">Subject (<code>sub</code>)</td><td style="padding: 0.75rem; border-bottom: 1px solid var(--border-subtle);"><strong>` + (meta.subject || "Anonymous") + `</strong></td></tr>
+              <tr><td style="padding: 0.75rem; border-bottom: 1px solid var(--border-subtle);">Issued At (<code>iat</code>)</td><td style="padding: 0.75rem; border-bottom: 1px solid var(--border-subtle);">` + (meta.issued_at || "Not Specified") + `</td></tr>
+              <tr><td style="padding: 0.75rem; border-bottom: 1px solid var(--border-subtle);">Expires At (<code>exp</code>)</td><td style="padding: 0.75rem; border-bottom: 1px solid var(--border-subtle);">` + (meta.expires_at || "None (Indefinite)") + `</td></tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div style="text-align: center; margin-top: 4rem; margin-bottom: 2rem;" class="no-print">
+          <a href="/" class="btn-text" style="display: inline-flex; margin: 0 auto;">← Run Another Scan</a>
+        </div>
+      `;
+
+      reportContainer.innerHTML = html;
+    });
+  </script>
+</body>
+</html>

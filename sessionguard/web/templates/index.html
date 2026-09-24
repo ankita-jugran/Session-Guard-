@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SessionGuard | JWT Session Hijacking Risk Assessment Console</title>
+  <link rel="stylesheet" href="/static/css/analyzer.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Header / Navigation Bar -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="brand-logo">
+        <svg class="shield-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="brand-text">
+          <span class="brand-title">SessionGuard</span>
+          <span class="brand-badge">Security Console v1.0</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="header-right">
+      <div id="target-status-badge" class="target-badge checking">
+        <span class="status-dot"></span>
+        <span id="target-status-text">Checking Target Server...</span>
+      </div>
+
+
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+    <!-- Top Input Section -->
+    <section class="card input-card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <h2 class="card-title">Audit Target Configuration</h2>
+          <p class="card-subtitle">Paste a JWT session token to analyze signature integrity, entropy, and session hijacking exposure.</p>
+        </div>
+        <div class="card-actions">
+          <button id="btn-paste-clipboard" class="btn-text" title="Paste from clipboard">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+            Paste
+          </button>
+          <button id="btn-clear" class="btn-text" title="Clear input">Clear</button>
+        </div>
+      </div>
+
+      <div class="token-input-wrapper">
+        <label for="jwt-input" class="input-label">JSON Web Token (Raw or Bearer):</label>
+        <textarea id="jwt-input" class="code-textarea" rows="4" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsInJvbGUiOiJhZG1pbmlzdHJhdG9yIiwiaWF0IjoxNzg5..."></textarea>
+      </div>
+
+      <div class="config-row">
+        <div class="target-url-field">
+          <label for="target-url-input" class="input-label">Target Application URL (for active signature verification probes):</label>
+          <div class="url-input-box">
+            <span class="url-prefix">HTTP</span>
+            <input type="text" id="target-url-input" value="http://127.0.0.1:5000" placeholder="http://127.0.0.1:5000">
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button id="btn-run-audit" class="btn-primary">
+            <svg class="btn-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            <span>Run Security Audit</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Empty State (Shown before first audit) -->
+    <div id="empty-state" class="empty-state-card">
+      <div class="empty-icon-wrapper">
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M12 8v4m0 4h.01" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h3>Ready to Audit JWT Session Posture</h3>
+      <p>Log into your target application (e.g. at <strong>http://127.0.0.1:5000</strong>), copy the active session token from your dashboard, and paste it above. SessionGuard will perform an independent, black-box security audit to determine if the session can be hijacked.</p>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading-state" class="loading-card" style="display: none;">
+      <div class="scanner-radar"></div>
+      <h4>Executing Multi-Vector Security Checks...</h4>
+      <p class="loading-sub">Testing signature algorithm, executing HMAC dictionary attack, and evaluating expiration bounds.</p>
+    </div>
+
+    <!-- Results Section (Populated on audit) -->
+    <section id="results-section" class="results-container" style="display: none;">
+      
+      <!-- Executive Overview Card -->
+      <div class="card executive-card">
+        <div class="executive-top">
+          <!-- Big Risk Gauge Block -->
+          <div id="risk-score-box" class="risk-score-box score-critical">
+            <div class="score-number-wrap">
+              <span id="score-value" class="score-number">9</span>
+              <span class="score-denominator">/ 9</span>
+            </div>
+            <span id="score-badge-text" class="score-level-badge">CRITICAL RISK</span>
+          </div>
+
+          <!-- Hijack Verdict Statement -->
+          <div class="verdict-content">
+            <div class="verdict-label">SESSION HIJACKING RISK VERDICT</div>
+            <h3 id="verdict-title" class="verdict-title">Complete Account Takeover Possible</h3>
+            <p id="verdict-desc" class="verdict-description">
+              Attackers can forge arbitrary valid tokens or bypass cryptographic verification entirely. Session hijacking is trivial, immediate, and undetectable without server-side key rotation.
+            </p>
+          </div>
+
+          <!-- Quick Stats Column -->
+          <div class="stats-grid">
+            <div class="stat-item">
+              <span class="stat-label">Checks Run</span>
+              <span id="stat-total" class="stat-value">3</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Failed Checks</span>
+              <span id="stat-failed" class="stat-value stat-fail">2</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Passed Checks</span>
+              <span id="stat-passed" class="stat-value stat-pass">1</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Crack Speed</span>
+              <span id="stat-speed" class="stat-value">35K keys/s</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="executive-footer">
+          <div class="token-quick-preview">
+            <span class="preview-label">Audited Token:</span>
+            <code id="meta-preview" class="token-mono">eyJhbGciOiJIUzI1NiIsInR5c...</code>
+          </div>
+          <div class="export-btn-group">
+            <button id="btn-print-report" class="btn-outline">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+              Export PDF
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="tabs-nav">
+        <button class="tab-btn active" data-tab="tab-checks">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          Security Checks & Vulnerabilities
+        </button>
+        <button class="tab-btn" data-tab="tab-claims">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="7" y1="8" x2="17" y2="8"></line><line x1="7" y1="12" x2="17" y2="12"></line><line x1="7" y1="16" x2="13" y2="16"></line></svg>
+          Decoded Token Claims
+        </button>
+        <button class="tab-btn" data-tab="tab-standards">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          OWASP ASVS & CWE Mapping
+        </button>
+      </div>
+
+      <!-- Tab Content 1: Checks Matrix -->
+      <div id="tab-checks" class="tab-pane active">
+        <div id="checks-cards-container" class="checks-grid">
+          <!-- Cards dynamically populated by analyzer.js -->
+        </div>
+      </div>
+
+      <!-- Tab Content 2: Decoded Token & Claims -->
+      <div id="tab-claims" class="tab-pane">
+        <div class="claims-grid">
+          <!-- Metadata Table Card -->
+          <div class="card">
+            <h3 class="card-subtitle-bold">Token Attributes & Life Cycle</h3>
+            <table class="meta-table">
+              <tbody>
+                <tr>
+                  <td>Algorithm (<code>alg</code>)</td>
+                  <td id="meta-alg"><span class="badge badge-accent">HS256</span></td>
+                </tr>
+                <tr>
+                  <td>Type (<code>typ</code>)</td>
+                  <td id="meta-typ">JWT</td>
+                </tr>
+                <tr>
+                  <td>Subject (<code>sub</code>)</td>
+                  <td id="meta-sub"><strong>alice</strong></td>
+                </tr>
+                <tr>
+                  <td>Role Claim (<code>role</code>)</td>
+                  <td id="meta-role"><span class="badge badge-role">user</span></td>
+                </tr>
+                <tr>
+                  <td>Issued At (<code>iat</code>)</td>
+                  <td id="meta-iat">2026-09-24 10:00:00 UTC</td>
+                </tr>
+                <tr>
+                  <td>Expires At (<code>exp</code>)</td>
+                  <td id="meta-exp">2026-10-24 10:00:00 UTC</td>
+                </tr>
+                <tr>
+                  <td>Total Validity Window</td>
+                  <td id="meta-total-life">30 days</td>
+                </tr>
+                <tr>
+                  <td>Status / Remaining Time</td>
+                  <td id="meta-remaining">29d 23h remaining</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Raw Claims JSON Card -->
+          <div class="card">
+            <div class="json-header">
+              <h3 class="card-subtitle-bold">Payload Claims (Decoded JSON)</h3>
+              <button id="btn-copy-payload" class="btn-text">Copy JSON</button>
+            </div>
+            <pre id="json-payload" class="code-block"></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content 3: Standards Compliance -->
+      <div id="tab-standards" class="tab-pane">
+        <div class="card">
+          <h3 class="card-subtitle-bold">Security Standard Compliance Overview</h3>
+          <p class="card-desc">Assessment results mapped against the official Open Web Application Security Project (OWASP) and MITRE Common Weakness Enumeration standards.</p>
+          
+          <table class="standards-table">
+            <thead>
+              <tr>
+                <th>Standard</th>
+                <th>Category</th>
+                <th>Requirement</th>
+                <th>SessionGuard Finding</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="standards-table-body">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+
+  <footer class="app-footer">
+    <span>SessionGuard v1.0 &copy; 2026</span>
+  </footer>
+
+  <script src="/static/js/analyzer.js"></script>
+</body>
+</html>
