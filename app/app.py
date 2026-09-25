@@ -1,6 +1,6 @@
 """
 Dummy Login Web Application (Test Target for SessionGuard).
-Provides /login, /dashboard, /logout with configurable Vulnerable and Hardened modes.
+Provides /login, /dashboard, /logout with configurable Vulnerable and Secure modes.
 """
 import base64
 import json
@@ -14,7 +14,7 @@ from flask import (
 )
 import jwt
 
-from .config import AppConfig, PROFILE_VULNERABLE, PROFILE_HARDENED
+from .config import AppConfig, PROFILE_VULNERABLE, PROFILE_SECURE
 from .db import (
     init_db, verify_user, register_user, update_password,
     revoke_token, revoke_all_user_tokens, is_token_revoked,
@@ -89,9 +89,16 @@ def validate_session_token(token: str) -> Tuple[bool, Optional[Dict[str, Any]], 
     else:
         # Standard cryptographic verification
         try:
+            kid = header.get("kid")
+            if kid and kid in profile.secret_keys:
+                secret = profile.secret_keys[kid]
+            else:
+                # Fallback to first key if kid missing (for backward compatibility)
+                secret = list(profile.secret_keys.values())[0]
+
             payload = jwt.decode(
                 token,
-                profile.secret_key,
+                secret,
                 algorithms=["HS256"],
                 options={"verify_exp": False} # We check exp explicitly below for custom feedback
             )
@@ -174,12 +181,17 @@ def login_page():
         if profile.idle_timeout_seconds > 0:
             claims["last_active"] = now
 
+        # Select a random key from the active profile
+        import random
+        kid = random.choice(list(profile.secret_keys.keys()))
+        secret = profile.secret_keys[kid]
+
         # Sign JWT
-        token = jwt.encode(claims, profile.secret_key, algorithm="HS256")
+        token = jwt.encode(claims, secret, algorithm="HS256", headers={"kid": kid})
 
         # Handle delivery based on active storage profile
         if profile.storage_location == "cookie":
-            # Hardened / Cookie mode
+            # Secure / Cookie mode
             resp = make_response(
                 jsonify({
                     "success": True,
@@ -259,7 +271,7 @@ def forgot_password():
 
     profile = AppConfig.get_profile()
     if profile.enforce_revocation:
-        # In hardened mode, invalidate all active tokens for this user
+        # In secure mode, invalidate all active tokens for this user
         revoke_all_user_tokens(username, reason="password_reset")
 
     return jsonify({
@@ -341,7 +353,7 @@ def get_mode():
 @app.route("/api/toggle-mode", methods=["POST"])
 def toggle_mode():
     current = AppConfig.get_profile().name
-    new_mode = "hardened" if current == "vulnerable" else "vulnerable"
+    new_mode = "secure" if current == "vulnerable" else "vulnerable"
     profile = AppConfig.set_mode(new_mode)
     return jsonify({
         "success": True,

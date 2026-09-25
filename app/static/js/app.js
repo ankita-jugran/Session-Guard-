@@ -312,12 +312,12 @@ async function selectSecurityMode(mode) {
             const modeText = document.getElementById("header-mode-text");
             const modeDot = document.getElementById("header-mode-dot");
             const optVuln = document.getElementById("mode-opt-vulnerable");
-            const optHard = document.getElementById("mode-opt-hardened");
+            const optHard = document.getElementById("mode-opt-secure");
 
             if (modeText) modeText.textContent = mode.toUpperCase();
             if (modeDot) modeDot.style.backgroundColor = mode === "vulnerable" ? "var(--danger)" : "var(--success)";
             if (optVuln) optVuln.classList.toggle("active", mode === "vulnerable");
-            if (optHard) optHard.classList.toggle("active", mode === "hardened");
+            if (optHard) optHard.classList.toggle("active", mode === "secure");
 
             showToast(`Switched to ${mode.toUpperCase()} mode!`, mode === "vulnerable" ? "⚠️" : "🛡️");
 

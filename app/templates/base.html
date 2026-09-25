@@ -37,10 +37,10 @@
                                 <div style="color: var(--text-muted); font-size: 0.72rem;">Weak key, alg:none allowed, long expiry</div>
                             </div>
                         </div>
-                        <div class="mode-dropdown-item {{ 'active' if profile and profile.name == 'hardened' else '' }}" id="mode-opt-hardened" onclick="selectSecurityMode('hardened')">
+                        <div class="mode-dropdown-item {{ 'active' if profile and profile.name == 'secure' else '' }}" id="mode-opt-secure" onclick="selectSecurityMode('secure')">
                             <span class="dot" style="background-color: var(--success);"></span>
                             <div>
-                                <div style="font-weight: 600; color: var(--text-white); font-size: 0.85rem;">Hardened Mode</div>
+                                <div style="font-weight: 600; color: var(--text-white); font-size: 0.85rem;">Secure Mode</div>
                                 <div style="color: var(--text-muted); font-size: 0.72rem;">256-bit key, strict signature, blacklist</div>
                             </div>
                         </div>

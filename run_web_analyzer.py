@@ -12,6 +12,13 @@ if BASE_DIR not in sys.path:
 
 from sessionguard.web.app import app
 
+import logging
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
+import flask.cli
+flask.cli.show_server_banner = lambda *args: None
+
 if __name__ == "__main__":
     print("=" * 70)
     print("  SessionGuard Security Console (Web GUI)")
