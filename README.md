@@ -5,7 +5,7 @@ SessionGuard is an automated authentication security audit tool that analyzes JW
 
 ---
 
-## 🎯 Project Architecture (50% Presentation Milestone)
+## 🎯 Project Architecture
 
 The system is composed of two distinct components:
 
@@ -41,7 +41,7 @@ Open **`http://127.0.0.1:5000`** in your browser.
 - Default Admin Account: `admin` / `admin2026`
 - Toggle between **Vulnerable** and **Hardened** modes using the dropdown in the top-right navigation bar.
 
-### 3. Launch the SessionGuard Web GUI Console (Part B - Recommended for Presentations)
+### 3. Launch the SessionGuard Web GUI Console (Part B)
 ```powershell
 python run_web_analyzer.py
 ```
@@ -77,7 +77,7 @@ python run_sessionguard.py analyze "<JWT_TOKEN>" --json
 
 ---
 
-## 🎤 Presentation Demo Walkthrough (For Your Teacher)
+## 🎤 Demo Walkthrough
 
 Follow these steps for a live demonstration:
 
@@ -92,7 +92,7 @@ Follow these steps for a live demonstration:
      ```powershell
      python run_sessionguard.py analyze "<COPIED_TOKEN>" --target http://127.0.0.1:5000
      ```
-   - **Highlight to your teacher**:
+   - **Key Findings**:
      - `HMAC Secret Key Strength`: **[FAIL] CRITICAL (9/9)** – The dictionary engine cracked the secret (`'secret'`) in under 1 millisecond!
      - `Algorithm 'none' Bypass`: **[FAIL] CRITICAL (9/9)** – The tool dynamically forged an unsigned token and proved the server accepted it (CWE-347).
      - `Session Expiration`: **[FAIL] HIGH (6/9)** – Token is valid for 30 days without re-authentication (CWE-613).
@@ -105,7 +105,7 @@ Follow these steps for a live demonstration:
      ```powershell
      python run_sessionguard.py analyze "<NEW_TOKEN>" --target http://127.0.0.1:5000
      ```
-   - **Highlight to your teacher**:
+   - **Key Findings**:
      - All 3 checks **[PASS]** with **LOW (1/9)** score.
      - Signature bypass rejected.
      - 256-bit entropy resisted dictionary cracking.
